@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { Calendar, User, Mail, Phone } from "lucide-react";
+import { Calendar, User, Mail, Phone, Smartphone } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -13,9 +13,10 @@ interface BookingFormProps {
   selectedLocation: string | null;
   selectedSlot: string | null;
   slotPrice: number;
+  upiId?: string;
 }
 
-const BookingForm = ({ selectedLocation, selectedSlot, slotPrice }: BookingFormProps) => {
+const BookingForm = ({ selectedLocation, selectedSlot, slotPrice, upiId = "yourstore@upi" }: BookingFormProps) => {
   const [date, setDate] = useState<Date>();
   const [time, setTime] = useState("");
   const [name, setName] = useState("");
@@ -29,28 +30,38 @@ const BookingForm = ({ selectedLocation, selectedSlot, slotPrice }: BookingFormP
     "18:00", "19:00", "20:00", "21:00", "22:00", "23:00"
   ];
 
-  const handleSubmit = (e: React.FormEvent) => {
-    e.preventDefault();
-    
+  const generateUPILink = () => {
+    const transactionNote = `SleepPod-${selectedLocation}-${selectedSlot}`;
+    const encodedName = encodeURIComponent("Sleep Pod Booking");
+    const encodedNote = encodeURIComponent(transactionNote);
+    return `upi://pay?pa=${upiId}&pn=${encodedName}&am=${slotPrice}&cu=INR&tn=${encodedNote}`;
+  };
+
+  const handlePayWithUPI = () => {
     if (!selectedLocation || !selectedSlot || !date || !time || !name || !email) {
       toast({
         title: "Missing Information",
-        description: "Please fill in all required fields.",
+        description: "Please fill in all required fields before payment.",
         variant: "destructive"
       });
       return;
     }
 
+    const upiLink = generateUPILink();
+    
+    // Try to open UPI app
+    window.location.href = upiLink;
+    
     toast({
-      title: "Booking Confirmed! 🎉",
-      description: `Your pod at ${selectedLocation} is reserved for ${format(date, "PPP")} at ${time}.`,
+      title: "Opening UPI App",
+      description: "Complete the payment in your UPI app. Your booking will be confirmed after payment.",
     });
   };
 
   const isFormValid = selectedLocation && selectedSlot && date && time && name && email;
 
   return (
-    <form onSubmit={handleSubmit} className="space-y-6">
+    <form className="space-y-6" onSubmit={(e) => e.preventDefault()}>
       <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
         <div className="space-y-2">
           <Label htmlFor="date">Select Date</Label>
@@ -134,7 +145,7 @@ const BookingForm = ({ selectedLocation, selectedSlot, slotPrice }: BookingFormP
               type="tel"
               value={phone}
               onChange={(e) => setPhone(e.target.value)}
-              placeholder="+1 234 567 890" 
+              placeholder="+91 98765 43210" 
               className="pl-10 h-12" 
             />
           </div>
@@ -149,19 +160,25 @@ const BookingForm = ({ selectedLocation, selectedSlot, slotPrice }: BookingFormP
           </div>
           <div className="flex items-center justify-between mt-2">
             <span className="text-muted-foreground">Total Amount</span>
-            <span className="text-2xl font-bold text-primary">${slotPrice}</span>
+            <span className="text-2xl font-bold text-primary">₹{slotPrice}</span>
           </div>
         </div>
       )}
 
       <Button 
-        type="submit" 
+        type="button"
+        onClick={handlePayWithUPI}
         size="lg"
         disabled={!isFormValid}
         className="w-full h-14 text-lg font-semibold bg-gradient-to-r from-primary to-primary/80 hover:from-primary/90 hover:to-primary/70 transition-all duration-300"
       >
-        Confirm Booking
+        <Smartphone className="mr-2 h-5 w-5" />
+        Pay ₹{slotPrice} with UPI
       </Button>
+      
+      <p className="text-xs text-center text-muted-foreground">
+        Opens your UPI app (GPay, PhonePe, Paytm, etc.)
+      </p>
     </form>
   );
 };
