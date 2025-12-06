@@ -40,7 +40,7 @@ const timeSlots = [
     id: "flexible",
     duration: "Flexible",
     hours: 0,
-    price: ||60,
+    price: 60,
     description: "Pay per hour, perfect for quick naps"
   },
   {
