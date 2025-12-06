@@ -9,7 +9,7 @@ const locations = [
     id: "airport-jfk",
     name: "JFK Airport",
     address: "Terminal 4, New York",
-    image: "https://images.unsplash.com/photo-1436491865332-7a61a109cc05?w=600&h=400&fit=crop",
+    image: "https://tse1.mm.bing.net/th/id/OIP.JScBe7BElQE_XpZMWm_eigHaFx?pid=Api&P=0&h=180",
     availablePods: 12
   },
   {
