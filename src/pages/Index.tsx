@@ -40,21 +40,21 @@ const timeSlots = [
     id: "flexible",
     duration: "Flexible",
     hours: 0,
-    price: 15,
+    price: ₹60,
     description: "Pay per hour, perfect for quick naps"
   },
   {
     id: "3-hours",
     duration: "3 Hours",
     hours: 3,
-    price: 35,
+    price: ₹180,
     description: "Short rest between flights or meetings"
   },
   {
     id: "6-hours",
     duration: "6 Hours",
     hours: 6,
-    price: 55,
+    price: ₹360,
     description: "Half-day retreat for deep rest",
     isPopular: true
   },
@@ -62,14 +62,14 @@ const timeSlots = [
     id: "12-hours",
     duration: "12 Hours",
     hours: 12,
-    price: 85,
+    price: ₹599,
     description: "Extended stay for overnight comfort"
   },
   {
     id: "24-hours",
     duration: "24 Hours",
     hours: 24,
-    price: 120,
+    price: ₹999,
     description: "Full day access with all amenities"
   }
 ];
