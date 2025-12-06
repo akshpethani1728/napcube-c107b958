@@ -6,31 +6,31 @@ import BookingForm from "@/components/BookingForm";
 
 const locations = [
   {
-    id: "airport-jfk",
-    name: "JFK Airport",
-    address: "Terminal 4, New York",
-    image: "https://tse1.mm.bing.net/th/id/OIP.JScBe7BElQE_XpZMWm_eigHaFx?pid=Api&P=0&h=180",
+    id: "Dwarka",
+    name: "Dwarikadhish Temple",
+    address: "Dwarika, Gujarat",
+    image: "https://www.gujarattourism.com/content/dam/gujrattourism/images/religious-sites/dwarkadhish-temple/Dwarkadhish-Temple-Thumbnail.jpg",
     availablePods: 12
   },
   {
-    id: "downtown-manhattan",
-    name: "Manhattan Hub",
-    address: "Times Square, NYC",
-    image: "https://images.unsplash.com/photo-1496442226666-8d4d0e62e6e9?w=600&h=400&fit=crop",
-    availablePods: 8
+    id: "downtown-junagadh",
+    name: "Girnar hills",
+    address: "Junagadh, Gujarat",
+    image: "https://i.ytimg.com/vi/wzxaUZ3W0S8/maxresdefault.jpg",
+    availablePods: 20
   },
   {
-    id: "sf-downtown",
-    name: "San Francisco",
-    address: "Union Square, SF",
-    image: "https://images.unsplash.com/photo-1501594907352-04cda38ebc29?w=600&h=400&fit=crop",
+    id: "Somnath Temple",
+    name: "Somnath Temple",
+    address: "Somnath, Gujarat ",
+    image: "https://www.worldtalentorg.com/wp-content/uploads/2021/03/Somanath_Temple.jpg",
     availablePods: 15
   },
   {
-    id: "lax-terminal",
-    name: "LAX Airport",
-    address: "Terminal B, Los Angeles",
-    image: "https://images.unsplash.com/photo-1569154941061-e231b4725ef1?w=600&h=400&fit=crop",
+    id: "Saputara",
+    name: "Saputara hill station",
+    address: "Dang",
+    image: "https://www.garhatours.in/wp-content/uploads/2015/09/Saputara_hillstation.jpg",
     availablePods: 20
   }
 ];
@@ -104,7 +104,7 @@ const Index = () => {
           </div>
           
           <h1 className="text-4xl md:text-6xl font-bold mb-4 tracking-tight">
-            Sleep Pods for
+            NapCube for
             <span className="block bg-gradient-to-r from-accent to-primary bg-clip-text text-transparent">
               Modern Travelers
             </span>
@@ -189,7 +189,7 @@ const Index = () => {
       <footer className="bg-secondary/50 border-t border-border py-8 px-4 mt-16">
         <div className="max-w-6xl mx-auto text-center">
           <p className="text-muted-foreground text-sm">
-            © 2024 SleepPod. Premium rest for modern travelers.
+            © 2024 NapCube. Premium rest for modern travelers.
           </p>
         </div>
       </footer>
