@@ -44,7 +44,7 @@ const TimeSlotCard = ({ duration, hours, price, description, isSelected, onClick
         </div>
         
         <div className="text-right">
-          <p className="text-2xl font-bold text-foreground">${price}</p>
+          <p className="text-2xl font-bold text-foreground">₹{price}</p>
           <p className="text-xs text-muted-foreground">total</p>
         </div>
       </div>
