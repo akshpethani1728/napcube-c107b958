@@ -1,8 +1,12 @@
 import { useState } from "react";
-import { Moon, Shield, Wifi, Coffee, ChevronRight } from "lucide-react";
+import { useNavigate } from "react-router-dom";
+import { Moon, Shield, Wifi, Coffee, Settings } from "lucide-react";
+import { Button } from "@/components/ui/button";
 import LocationCard from "@/components/LocationCard";
 import TimeSlotCard from "@/components/TimeSlotCard";
 import BookingForm from "@/components/BookingForm";
+import AvailabilityPanel from "@/components/AvailabilityPanel";
+import { useLocations } from "@/hooks/useLocations";
 
 const podImages = [
   "https://images.unsplash.com/photo-1555854877-bab0e564b8d5?w=600&q=80",
@@ -13,37 +17,6 @@ const podImages = [
   "https://images.unsplash.com/photo-1566665797739-1674de7a421a?w=600&q=80",
   "https://images.unsplash.com/photo-1522771739844-6a9f6d5f14af?w=600&q=80",
   "https://images.unsplash.com/photo-1618773928121-c32242e63f39?w=600&q=80",
-];
-
-const locations = [
-  {
-    id: "Dwarka",
-    name: "Dwarikadhish Temple",
-    address: "Dwarika, Gujarat",
-    image: "https://www.gujarattourism.com/content/dam/gujrattourism/images/religious-sites/dwarkadhish-temple/Dwarkadhish-Temple-Thumbnail.jpg",
-    availablePods: 12
-  },
-  {
-    id: "downtown-junagadh",
-    name: "Girnar hills",
-    address: "Junagadh, Gujarat",
-    image: "https://i.ytimg.com/vi/wzxaUZ3W0S8/maxresdefault.jpg",
-    availablePods: 20
-  },
-  {
-    id: "Somnath Temple",
-    name: "Somnath Temple",
-    address: "Somnath, Gujarat ",
-    image: "https://www.worldtalentorg.com/wp-content/uploads/2021/03/Somanath_Temple.jpg",
-    availablePods: 15
-  },
-  {
-    id: "Saputara",
-    name: "Saputara hill station",
-    address: "Dang",
-    image: "https://www.garhatours.in/wp-content/uploads/2015/09/Saputara_hillstation.jpg",
-    availablePods: 20
-  }
 ];
 
 const timeSlots = [
@@ -95,14 +68,27 @@ const features = [
 const Index = () => {
   const [selectedLocation, setSelectedLocation] = useState<string | null>(null);
   const [selectedSlot, setSelectedSlot] = useState<string | null>(null);
+  const navigate = useNavigate();
+  const { data: locations, isLoading: locationsLoading } = useLocations();
 
   const selectedSlotData = timeSlots.find(s => s.id === selectedSlot);
-  const selectedLocationData = locations.find(l => l.id === selectedLocation);
+  const selectedLocationData = locations?.find(l => l.id === selectedLocation);
 
   return (
     <div className="min-h-screen bg-background">
       {/* Hero Section */}
       <header className="relative overflow-hidden bg-primary text-primary-foreground py-20 px-4">
+        {/* Admin Button */}
+        <Button
+          variant="ghost"
+          size="sm"
+          onClick={() => navigate("/auth")}
+          className="absolute top-4 right-4 text-primary-foreground/70 hover:text-primary-foreground hover:bg-primary-foreground/10"
+        >
+          <Settings className="w-4 h-4 mr-2" />
+          Admin
+        </Button>
+
         <div className="absolute inset-0 opacity-20">
           <div className="absolute inset-0 bg-[radial-gradient(circle_at_30%_40%,hsl(var(--accent))_0%,transparent_50%)]" />
           <div className="absolute inset-0 bg-[radial-gradient(circle_at_70%_60%,hsl(172_66%_50%)_0%,transparent_50%)]" />
@@ -159,6 +145,11 @@ const Index = () => {
       </header>
 
       <main className="max-w-6xl mx-auto px-4 py-16">
+        {/* Availability Panel */}
+        <section className="mb-16">
+          <AvailabilityPanel />
+        </section>
+
         {/* Step 1: Location Selection */}
         <section className="mb-16">
           <div className="flex items-center gap-3 mb-6">
@@ -166,16 +157,26 @@ const Index = () => {
             <h2 className="text-2xl font-bold text-foreground">Choose Your Location</h2>
           </div>
           
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
-            {locations.map((location) => (
-              <LocationCard
-                key={location.id}
-                {...location}
-                isSelected={selectedLocation === location.id}
-                onClick={() => setSelectedLocation(location.id)}
-              />
-            ))}
-          </div>
+          {locationsLoading ? (
+            <div className="text-center text-muted-foreground py-8">Loading locations...</div>
+          ) : locations && locations.length > 0 ? (
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+              {locations.map((location) => (
+                <LocationCard
+                  key={location.id}
+                  id={location.id}
+                  name={location.name}
+                  address={location.address}
+                  image={location.image_url || "https://images.unsplash.com/photo-1558618666-fcd25c85cd64?w=400"}
+                  availablePods={location.total_pods}
+                  isSelected={selectedLocation === location.id}
+                  onClick={() => setSelectedLocation(location.id)}
+                />
+              ))}
+            </div>
+          ) : (
+            <div className="text-center text-muted-foreground py-8">No locations available</div>
+          )}
         </section>
 
         {/* Step 2: Time Slot Selection */}
@@ -207,6 +208,7 @@ const Index = () => {
           <div className="bg-card rounded-2xl border border-border p-6 shadow-sm">
             <BookingForm 
               selectedLocation={selectedLocationData?.name || null}
+              selectedLocationId={selectedLocation}
               selectedSlot={selectedSlotData?.duration || null}
               slotPrice={selectedSlotData?.price || 0}
               upiId="akshpethani1728@ybl"
