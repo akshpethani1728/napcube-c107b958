@@ -5,7 +5,7 @@ import TimeSlotCard from "@/components/TimeSlotCard";
 import BookingForm from "@/components/BookingForm";
 
 const podImages = [
-  "blob:https://web.whatsapp.com/338d2482-2534-43f6-9ba9-5cb4ddeec4c6",
+  "https://gemini.google.com/9d7f268c-76f7-4624-827e-0dee6a306eaa",
   "blob:https://web.whatsapp.com/89b05082-9a3e-4c2f-9139-ea0634c1d9d2",
   "https://images.unsplash.com/photo-1590490360182-c33d57733427?w=600&q=80",
   "https://images.unsplash.com/photo-1582719478250-c89cae4dc85b?w=600&q=80",
