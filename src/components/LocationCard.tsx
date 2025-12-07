@@ -2,6 +2,7 @@ import { MapPin } from "lucide-react";
 import { cn } from "@/lib/utils";
 
 interface LocationCardProps {
+  id: string;
   name: string;
   address: string;
   image: string;
@@ -10,7 +11,7 @@ interface LocationCardProps {
   onClick: () => void;
 }
 
-const LocationCard = ({ name, address, image, availablePods, isSelected, onClick }: LocationCardProps) => {
+const LocationCard = ({ id, name, address, image, availablePods, isSelected, onClick }: LocationCardProps) => {
   return (
     <div
       onClick={onClick}

@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { Calendar, User, Mail, Phone, Smartphone } from "lucide-react";
+import { Calendar, User, Mail, Phone, Smartphone, AlertCircle } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -8,21 +8,36 @@ import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover
 import { format } from "date-fns";
 import { cn } from "@/lib/utils";
 import { useToast } from "@/hooks/use-toast";
+import { useCreateBooking } from "@/hooks/useBookings";
+import { useLocationAvailability } from "@/hooks/useAvailability";
 
 interface BookingFormProps {
   selectedLocation: string | null;
+  selectedLocationId: string | null;
   selectedSlot: string | null;
   slotPrice: number;
   upiId?: string;
 }
 
-const BookingForm = ({ selectedLocation, selectedSlot, slotPrice, upiId = "yourstore@upi" }: BookingFormProps) => {
+const BookingForm = ({ 
+  selectedLocation, 
+  selectedLocationId,
+  selectedSlot, 
+  slotPrice, 
+  upiId = "yourstore@upi" 
+}: BookingFormProps) => {
   const [date, setDate] = useState<Date>();
   const [time, setTime] = useState("");
   const [name, setName] = useState("");
   const [email, setEmail] = useState("");
   const [phone, setPhone] = useState("");
   const { toast } = useToast();
+  const createBooking = useCreateBooking();
+  
+  const { data: availability, isLoading: checkingAvailability } = useLocationAvailability(
+    selectedLocationId,
+    date || null
+  );
 
   const timeSlots = [
     "06:00", "07:00", "08:00", "09:00", "10:00", "11:00",
@@ -37,8 +52,8 @@ const BookingForm = ({ selectedLocation, selectedSlot, slotPrice, upiId = "yours
     return `upi://pay?pa=${upiId}&pn=${encodedName}&am=${slotPrice}&cu=INR&tn=${encodedNote}`;
   };
 
-  const handlePayWithUPI = () => {
-    if (!selectedLocation || !selectedSlot || !date || !time || !name || !email) {
+  const handlePayWithUPI = async () => {
+    if (!selectedLocation || !selectedLocationId || !selectedSlot || !date || !time || !name || !email) {
       toast({
         title: "Missing Information",
         description: "Please fill in all required fields before payment.",
@@ -47,18 +62,46 @@ const BookingForm = ({ selectedLocation, selectedSlot, slotPrice, upiId = "yours
       return;
     }
 
-    const upiLink = generateUPILink();
-    
-    // Try to open UPI app
-    window.location.href = upiLink;
-    
-    toast({
-      title: "Opening UPI App",
-      description: "Complete the payment in your UPI app. Your booking will be confirmed after payment.",
-    });
+    if (availability && !availability.isAvailable) {
+      toast({
+        title: "No Pods Available",
+        description: "All pods are booked for this date. Please select a different date.",
+        variant: "destructive"
+      });
+      return;
+    }
+
+    try {
+      // Save booking to database
+      await createBooking.mutateAsync({
+        location_id: selectedLocationId,
+        customer_name: name,
+        customer_email: email,
+        customer_phone: phone || "",
+        booking_date: format(date, "yyyy-MM-dd"),
+        booking_time: time,
+        duration: selectedSlot,
+        price: slotPrice,
+      });
+
+      const upiLink = generateUPILink();
+      window.location.href = upiLink;
+      
+      toast({
+        title: "Booking Confirmed!",
+        description: "Opening UPI app for payment. Complete the payment to finalize your booking.",
+      });
+    } catch (error) {
+      toast({
+        title: "Booking Failed",
+        description: "Could not save your booking. Please try again.",
+        variant: "destructive"
+      });
+    }
   };
 
   const isFormValid = selectedLocation && selectedSlot && date && time && name && email;
+  const isUnavailable = availability && !availability.isAvailable;
 
   return (
     <form className="space-y-6" onSubmit={(e) => e.preventDefault()}>
@@ -105,6 +148,36 @@ const BookingForm = ({ selectedLocation, selectedSlot, slotPrice, upiId = "yours
           </select>
         </div>
       </div>
+
+      {/* Availability Warning */}
+      {date && selectedLocationId && (
+        <div className={cn(
+          "p-4 rounded-xl border flex items-center gap-3",
+          checkingAvailability ? "bg-secondary/50 border-border" :
+          isUnavailable ? "bg-red-500/10 border-red-500/30" :
+          "bg-green-500/10 border-green-500/30"
+        )}>
+          {checkingAvailability ? (
+            <span className="text-sm text-muted-foreground">Checking availability...</span>
+          ) : isUnavailable ? (
+            <>
+              <AlertCircle className="w-5 h-5 text-red-500" />
+              <div>
+                <p className="font-medium text-red-500">No pods available</p>
+                <p className="text-sm text-muted-foreground">All {availability.totalPods} pods are booked for this date</p>
+              </div>
+            </>
+          ) : availability ? (
+            <>
+              <div className="w-3 h-3 rounded-full bg-green-500 animate-pulse" />
+              <div>
+                <p className="font-medium text-green-600">{availability.availablePods} pods available</p>
+                <p className="text-sm text-muted-foreground">{availability.bookedPods} of {availability.totalPods} already booked</p>
+              </div>
+            </>
+          ) : null}
+        </div>
+      )}
 
       <div className="space-y-2">
         <Label htmlFor="name">Full Name</Label>
@@ -169,11 +242,11 @@ const BookingForm = ({ selectedLocation, selectedSlot, slotPrice, upiId = "yours
         type="button"
         onClick={handlePayWithUPI}
         size="lg"
-        disabled={!isFormValid}
+        disabled={!isFormValid || isUnavailable || createBooking.isPending}
         className="w-full h-14 text-lg font-semibold bg-gradient-to-r from-primary to-primary/80 hover:from-primary/90 hover:to-primary/70 transition-all duration-300"
       >
         <Smartphone className="mr-2 h-5 w-5" />
-        Pay ₹{slotPrice} with UPI
+        {createBooking.isPending ? "Saving..." : `Pay ₹${slotPrice} with UPI`}
       </Button>
       
       <p className="text-xs text-center text-muted-foreground">
