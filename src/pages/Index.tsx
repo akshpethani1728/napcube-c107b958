@@ -1,8 +1,14 @@
 import { useState } from "react";
-import { Moon, Shield, Wifi, Coffee } from "lucide-react";
+import { Moon, Shield, Wifi, Coffee, ChevronRight } from "lucide-react";
 import LocationCard from "@/components/LocationCard";
 import TimeSlotCard from "@/components/TimeSlotCard";
 import BookingForm from "@/components/BookingForm";
+
+const podImages = [
+  "https://images.unsplash.com/photo-1555854877-bab0e564b8d5?w=600&q=80",
+  "https://images.unsplash.com/photo-1631049307264-da0ec9d70304?w=600&q=80",
+  "https://images.unsplash.com/photo-1590490360182-c33d57733427?w=600&q=80",
+];
 
 const locations = [
   {
@@ -90,27 +96,54 @@ const Index = () => {
 
   return (
     <div className="min-h-screen bg-background">
+      {/* Pod Images Showcase */}
+      <section className="bg-primary py-12 px-4">
+        <div className="max-w-6xl mx-auto">
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+            {podImages.map((image, index) => (
+              <div 
+                key={index} 
+                className="relative overflow-hidden rounded-2xl aspect-[4/3] group"
+              >
+                <img 
+                  src={image} 
+                  alt={`Premium sleeping pod ${index + 1}`}
+                  className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-110"
+                />
+                <div className="absolute inset-0 bg-gradient-to-t from-primary/80 to-transparent" />
+                {index === 0 && (
+                  <div className="absolute bottom-4 left-4 text-primary-foreground">
+                    <p className="text-sm font-medium text-accent">Premium Comfort</p>
+                    <p className="text-lg font-bold">Luxury Sleep Pods</p>
+                  </div>
+                )}
+              </div>
+            ))}
+          </div>
+        </div>
+      </section>
+
       {/* Hero Section */}
-      <header className="relative overflow-hidden bg-gradient-to-br from-foreground via-foreground/95 to-primary/20 text-card py-20 px-4">
-        <div className="absolute inset-0 opacity-10">
-          <div className="absolute inset-0 bg-[radial-gradient(circle_at_30%_40%,hsl(var(--primary))_0%,transparent_50%)]" />
-          <div className="absolute inset-0 bg-[radial-gradient(circle_at_70%_60%,hsl(var(--accent))_0%,transparent_50%)]" />
+      <header className="relative overflow-hidden bg-primary text-primary-foreground py-20 px-4">
+        <div className="absolute inset-0 opacity-20">
+          <div className="absolute inset-0 bg-[radial-gradient(circle_at_30%_40%,hsl(var(--accent))_0%,transparent_50%)]" />
+          <div className="absolute inset-0 bg-[radial-gradient(circle_at_70%_60%,hsl(172_66%_50%)_0%,transparent_50%)]" />
         </div>
         
         <div className="relative max-w-6xl mx-auto text-center">
-          <div className="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-card/10 backdrop-blur-sm border border-card/20 mb-6">
+          <div className="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-primary-foreground/10 backdrop-blur-sm border border-primary-foreground/20 mb-6">
             <Moon className="w-4 h-4" />
             <span className="text-sm font-medium">Rest. Recharge. Resume.</span>
           </div>
           
           <h1 className="text-4xl md:text-6xl font-bold mb-4 tracking-tight">
             NapCube for
-            <span className="block bg-gradient-to-r from-accent to-primary bg-clip-text text-transparent">
+            <span className="block bg-gradient-to-r from-accent to-accent/60 bg-clip-text text-transparent">
               Modern Travelers
             </span>
           </h1>
           
-          <p className="text-lg md:text-xl text-card/70 max-w-2xl mx-auto mb-10">
+          <p className="text-lg md:text-xl text-primary-foreground/70 max-w-2xl mx-auto mb-10">
             Private, comfortable sleeping pods at airports and city centers. 
             Book by the hour, get the rest you deserve.
           </p>
@@ -118,10 +151,10 @@ const Index = () => {
           {/* Features */}
           <div className="grid grid-cols-2 md:grid-cols-4 gap-4 max-w-4xl mx-auto">
             {features.map((feature) => (
-              <div key={feature.title} className="p-4 rounded-xl bg-card/5 backdrop-blur-sm border border-card/10">
+              <div key={feature.title} className="p-4 rounded-xl bg-primary-foreground/5 backdrop-blur-sm border border-primary-foreground/10">
                 <feature.icon className="w-6 h-6 mx-auto mb-2 text-accent" />
                 <h3 className="font-medium text-sm">{feature.title}</h3>
-                <p className="text-xs text-card/60 mt-1">{feature.description}</p>
+                <p className="text-xs text-primary-foreground/60 mt-1">{feature.description}</p>
               </div>
             ))}
           </div>
