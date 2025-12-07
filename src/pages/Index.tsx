@@ -8,6 +8,11 @@ const podImages = [
   "https://images.unsplash.com/photo-1555854877-bab0e564b8d5?w=600&q=80",
   "https://images.unsplash.com/photo-1631049307264-da0ec9d70304?w=600&q=80",
   "https://images.unsplash.com/photo-1590490360182-c33d57733427?w=600&q=80",
+  "https://images.unsplash.com/photo-1582719478250-c89cae4dc85b?w=600&q=80",
+  "https://images.unsplash.com/photo-1611892440504-42a792e24d32?w=600&q=80",
+  "https://images.unsplash.com/photo-1566665797739-1674de7a421a?w=600&q=80",
+  "https://images.unsplash.com/photo-1522771739844-6a9f6d5f14af?w=600&q=80",
+  "https://images.unsplash.com/photo-1618773928121-c32242e63f39?w=600&q=80",
 ];
 
 const locations = [
@@ -96,33 +101,6 @@ const Index = () => {
 
   return (
     <div className="min-h-screen bg-background">
-      {/* Pod Images Showcase */}
-      <section className="bg-primary py-12 px-4">
-        <div className="max-w-6xl mx-auto">
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-            {podImages.map((image, index) => (
-              <div 
-                key={index} 
-                className="relative overflow-hidden rounded-2xl aspect-[4/3] group"
-              >
-                <img 
-                  src={image} 
-                  alt={`Premium sleeping pod ${index + 1}`}
-                  className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-110"
-                />
-                <div className="absolute inset-0 bg-gradient-to-t from-primary/80 to-transparent" />
-                {index === 0 && (
-                  <div className="absolute bottom-4 left-4 text-primary-foreground">
-                    <p className="text-sm font-medium text-accent">Premium Comfort</p>
-                    <p className="text-lg font-bold">Luxury Sleep Pods</p>
-                  </div>
-                )}
-              </div>
-            ))}
-          </div>
-        </div>
-      </section>
-
       {/* Hero Section */}
       <header className="relative overflow-hidden bg-primary text-primary-foreground py-20 px-4">
         <div className="absolute inset-0 opacity-20">
@@ -142,6 +120,25 @@ const Index = () => {
               Modern Travelers
             </span>
           </h1>
+
+          {/* Pod Images Showcase - Horizontal Scroll */}
+          <div className="relative w-full max-w-5xl mx-auto mb-10 -mx-4 px-4">
+            <div className="flex gap-4 overflow-x-auto pb-4 scrollbar-hide snap-x snap-mandatory">
+              {podImages.map((image, index) => (
+                <div 
+                  key={index} 
+                  className="relative flex-shrink-0 w-64 md:w-80 overflow-hidden rounded-2xl aspect-[4/3] group snap-center"
+                >
+                  <img 
+                    src={image} 
+                    alt={`Premium sleeping pod ${index + 1}`}
+                    className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-110"
+                  />
+                  <div className="absolute inset-0 bg-gradient-to-t from-primary/80 to-transparent" />
+                </div>
+              ))}
+            </div>
+          </div>
           
           <p className="text-lg md:text-xl text-primary-foreground/70 max-w-2xl mx-auto mb-10">
             Private, comfortable sleeping pods at airports and city centers. 
