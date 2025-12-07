@@ -5,8 +5,8 @@ import TimeSlotCard from "@/components/TimeSlotCard";
 import BookingForm from "@/components/BookingForm";
 
 const podImages = [
-  "https://images.unsplash.com/photo-1555854877-bab0e564b8d5?w=600&q=80",
-  "https://images.unsplash.com/photo-1631049307264-da0ec9d70304?w=600&q=80",
+  "blob:https://web.whatsapp.com/338d2482-2534-43f6-9ba9-5cb4ddeec4c6",
+  "blob:https://web.whatsapp.com/89b05082-9a3e-4c2f-9139-ea0634c1d9d2",
   "https://images.unsplash.com/photo-1590490360182-c33d57733427?w=600&q=80",
   "https://images.unsplash.com/photo-1582719478250-c89cae4dc85b?w=600&q=80",
   "https://images.unsplash.com/photo-1611892440504-42a792e24d32?w=600&q=80",
@@ -27,7 +27,7 @@ const locations = [
     id: "downtown-junagadh",
     name: "Girnar hills",
     address: "Junagadh, Gujarat",
-    image: "https://i.ytimg.com/vi/wzxaUZ3W0S8/maxresdefault.jpg",
+    image: "https://tse3.mm.bing.net/th/id/OIP.CwYl9nFzUd6Tj0CdQh_OgQHaEK?pid=Api&P=0&h=180",
     availablePods: 20
   },
   {
