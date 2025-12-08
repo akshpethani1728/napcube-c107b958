@@ -84,7 +84,20 @@ const PaymentConfirmation = () => {
 
   const handlePayWithUPI = () => {
     const upiLink = generateUPILink();
-    window.location.href = upiLink;
+    // Use window.open for better mobile compatibility
+    const opened = window.open(upiLink, "_self");
+    // If window.open fails, try location.href as fallback
+    if (!opened) {
+      window.location.href = upiLink;
+    }
+  };
+
+  const handleCopyUPI = () => {
+    navigator.clipboard.writeText(upiId);
+    toast({
+      title: "UPI ID Copied",
+      description: `Pay ₹${booking?.price} to ${upiId} using any UPI app`,
+    });
   };
 
   const handleConfirmPayment = async () => {
@@ -299,8 +312,17 @@ const PaymentConfirmation = () => {
             Pay with UPI App
           </Button>
 
+          <Button
+            onClick={handleCopyUPI}
+            variant="outline"
+            size="lg"
+            className="w-full h-12"
+          >
+            Copy UPI ID: {upiId}
+          </Button>
+
           <p className="text-xs text-center text-muted-foreground">
-            Opens your UPI app (GPay, PhonePe, Paytm, etc.)
+            Tap "Pay with UPI App" on mobile, or copy the UPI ID to pay manually
           </p>
 
           <div className="relative py-4">
