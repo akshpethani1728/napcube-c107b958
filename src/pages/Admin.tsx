@@ -3,6 +3,7 @@ import { useNavigate } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
 import { useBookings } from "@/hooks/useBookings";
 import { useLocations } from "@/hooks/useLocations";
+import { useAdminRole } from "@/hooks/useAdminRole";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import {
@@ -18,20 +19,21 @@ import { format } from "date-fns";
 
 const Admin = () => {
   const [user, setUser] = useState<any>(null);
-  const [loading, setLoading] = useState(true);
+  const [authLoading, setAuthLoading] = useState(true);
   const navigate = useNavigate();
+  const { isAdmin, loading: roleLoading } = useAdminRole(user?.id);
   const { data: bookings, isLoading: bookingsLoading } = useBookings();
   const { data: locations } = useLocations();
 
   useEffect(() => {
     const { data: { subscription } } = supabase.auth.onAuthStateChange((event, session) => {
       setUser(session?.user ?? null);
-      setLoading(false);
+      setAuthLoading(false);
     });
 
     supabase.auth.getSession().then(({ data: { session } }) => {
       setUser(session?.user ?? null);
-      setLoading(false);
+      setAuthLoading(false);
     });
 
     return () => subscription.unsubscribe();
@@ -42,7 +44,7 @@ const Admin = () => {
     navigate("/");
   };
 
-  if (loading) {
+  if (authLoading || roleLoading) {
     return (
       <div className="min-h-screen bg-background flex items-center justify-center">
         <div className="animate-pulse text-muted-foreground">Loading...</div>
@@ -53,6 +55,23 @@ const Admin = () => {
   if (!user) {
     navigate("/auth");
     return null;
+  }
+
+  if (!isAdmin) {
+    return (
+      <div className="min-h-screen bg-background flex items-center justify-center">
+        <div className="text-center">
+          <h1 className="text-2xl font-bold text-foreground mb-4">Access Denied</h1>
+          <p className="text-muted-foreground mb-4">You don't have permission to access this page.</p>
+          <button
+            onClick={() => navigate("/")}
+            className="text-primary hover:underline"
+          >
+            Return to Home
+          </button>
+        </div>
+      </div>
+    );
   }
 
   const getLocationName = (locationId: string) => {
