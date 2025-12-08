@@ -1,5 +1,6 @@
 import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
+import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { useBookings } from "@/hooks/useBookings";
 import { useLocations } from "@/hooks/useLocations";
@@ -37,12 +38,26 @@ const Admin = () => {
     return () => subscription.unsubscribe();
   }, []);
 
+  // Check if user has admin role
+  const { data: isAdmin, isLoading: isAdminLoading } = useQuery({
+    queryKey: ['isAdmin', user?.id],
+    queryFn: async () => {
+      const { data, error } = await supabase.rpc('has_role', {
+        _user_id: user.id,
+        _role: 'admin'
+      });
+      if (error) throw error;
+      return data;
+    },
+    enabled: !!user?.id
+  });
+
   const handleLogout = async () => {
     await supabase.auth.signOut();
     navigate("/");
   };
 
-  if (loading) {
+  if (loading || isAdminLoading) {
     return (
       <div className="min-h-screen bg-background flex items-center justify-center">
         <div className="animate-pulse text-muted-foreground">Loading...</div>
@@ -52,6 +67,11 @@ const Admin = () => {
 
   if (!user) {
     navigate("/auth");
+    return null;
+  }
+
+  if (!isAdmin) {
+    navigate("/");
     return null;
   }
 
