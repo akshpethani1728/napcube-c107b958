@@ -1,5 +1,4 @@
 import { useState } from "react";
-import { useNavigate } from "react-router-dom";
 import { Calendar, User, Mail, Phone, Smartphone, AlertCircle } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -9,7 +8,7 @@ import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover
 import { format } from "date-fns";
 import { cn } from "@/lib/utils";
 import { useToast } from "@/hooks/use-toast";
-import { supabase } from "@/integrations/supabase/client";
+import { useCreateBooking } from "@/hooks/useBookings";
 import { useLocationAvailability } from "@/hooks/useAvailability";
 
 interface BookingFormProps {
@@ -32,9 +31,8 @@ const BookingForm = ({
   const [name, setName] = useState("");
   const [email, setEmail] = useState("");
   const [phone, setPhone] = useState("");
-  const [isSubmitting, setIsSubmitting] = useState(false);
   const { toast } = useToast();
-  const navigate = useNavigate();
+  const createBooking = useCreateBooking();
   
   const { data: availability, isLoading: checkingAvailability } = useLocationAvailability(
     selectedLocationId,
@@ -47,11 +45,18 @@ const BookingForm = ({
     "18:00", "19:00", "20:00", "21:00", "22:00", "23:00"
   ];
 
-  const handleProceedToPayment = async () => {
+  const generateUPILink = () => {
+    const transactionNote = `SleepPod-${selectedLocation}-${selectedSlot}`;
+    const encodedName = encodeURIComponent("Sleep Pod Booking");
+    const encodedNote = encodeURIComponent(transactionNote);
+    return `upi://pay?pa=${upiId}&pn=${encodedName}&am=${slotPrice}&cu=INR&tn=${encodedNote}`;
+  };
+
+  const handlePayWithUPI = async () => {
     if (!selectedLocation || !selectedLocationId || !selectedSlot || !date || !time || !name || !email) {
       toast({
         title: "Missing Information",
-        description: "Please fill in all required fields before proceeding.",
+        description: "Please fill in all required fields before payment.",
         variant: "destructive"
       });
       return;
@@ -66,37 +71,32 @@ const BookingForm = ({
       return;
     }
 
-    setIsSubmitting(true);
-
     try {
-      // Create booking with pending status
-      const { data, error } = await supabase
-        .from("bookings")
-        .insert({
-          location_id: selectedLocationId,
-          customer_name: name,
-          customer_email: email,
-          customer_phone: phone || "",
-          booking_date: format(date, "yyyy-MM-dd"),
-          booking_time: time,
-          duration: selectedSlot,
-          price: slotPrice,
-          status: "pending",
-        })
-        .select()
-        .single();
+      // Save booking to database
+      await createBooking.mutateAsync({
+        location_id: selectedLocationId,
+        customer_name: name,
+        customer_email: email,
+        customer_phone: phone || "",
+        booking_date: format(date, "yyyy-MM-dd"),
+        booking_time: time,
+        duration: selectedSlot,
+        price: slotPrice,
+      });
 
-      if (error) throw error;
-
-      // Navigate to payment confirmation page
-      navigate(`/payment?booking_id=${data.id}&upi_id=${encodeURIComponent(upiId)}`);
+      const upiLink = generateUPILink();
+      window.location.href = upiLink;
+      
+      toast({
+        title: "Booking Confirmed!",
+        description: "Opening UPI app for payment. Complete the payment to finalize your booking.",
+      });
     } catch (error) {
       toast({
         title: "Booking Failed",
-        description: "Could not create your booking. Please try again.",
+        description: "Could not save your booking. Please try again.",
         variant: "destructive"
       });
-      setIsSubmitting(false);
     }
   };
 
@@ -240,17 +240,17 @@ const BookingForm = ({
 
       <Button 
         type="button"
-        onClick={handleProceedToPayment}
+        onClick={handlePayWithUPI}
         size="lg"
-        disabled={!isFormValid || isUnavailable || isSubmitting}
+        disabled={!isFormValid || isUnavailable || createBooking.isPending}
         className="w-full h-14 text-lg font-semibold bg-gradient-to-r from-primary to-primary/80 hover:from-primary/90 hover:to-primary/70 transition-all duration-300"
       >
         <Smartphone className="mr-2 h-5 w-5" />
-        {isSubmitting ? "Processing..." : `Proceed to Pay ₹${slotPrice}`}
+        {createBooking.isPending ? "Saving..." : `Pay ₹${slotPrice} with UPI`}
       </Button>
       
       <p className="text-xs text-center text-muted-foreground">
-        You'll be redirected to complete UPI payment
+        Opens your UPI app (GPay, PhonePe, Paytm, etc.)
       </p>
     </form>
   );
