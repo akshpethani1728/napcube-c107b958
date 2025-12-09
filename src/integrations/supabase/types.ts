@@ -25,7 +25,10 @@ export type Database = {
           duration: string
           id: string
           location_id: string
+          payment_status: string | null
           price: number
+          razorpay_order_id: string | null
+          razorpay_payment_id: string | null
           status: string
         }
         Insert: {
@@ -38,7 +41,10 @@ export type Database = {
           duration: string
           id?: string
           location_id: string
+          payment_status?: string | null
           price: number
+          razorpay_order_id?: string | null
+          razorpay_payment_id?: string | null
           status?: string
         }
         Update: {
@@ -51,7 +57,10 @@ export type Database = {
           duration?: string
           id?: string
           location_id?: string
+          payment_status?: string | null
           price?: number
+          razorpay_order_id?: string | null
+          razorpay_payment_id?: string | null
           status?: string
         }
         Relationships: [
