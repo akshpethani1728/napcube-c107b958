@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { Calendar, User, Mail, Phone, Smartphone, AlertCircle } from "lucide-react";
+import { Calendar, User, Mail, Phone, QrCode, AlertCircle } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -10,7 +10,7 @@ import { cn } from "@/lib/utils";
 import { useToast } from "@/hooks/use-toast";
 import { useCreateBooking } from "@/hooks/useBookings";
 import { useLocationAvailability } from "@/hooks/useAvailability";
-
+import PaymentQRDialog from "./PaymentQRDialog";
 interface BookingFormProps {
   selectedLocation: string | null;
   selectedLocationId: string | null;
@@ -31,6 +31,8 @@ const BookingForm = ({
   const [name, setName] = useState("");
   const [email, setEmail] = useState("");
   const [phone, setPhone] = useState("");
+  const [showQRDialog, setShowQRDialog] = useState(false);
+  const [upiLink, setUpiLink] = useState("");
   const { toast } = useToast();
   const createBooking = useCreateBooking();
   
@@ -52,7 +54,7 @@ const BookingForm = ({
     return `upi://pay?pa=${upiId}&pn=${encodedName}&am=${slotPrice}&cu=INR&tn=${encodedNote}`;
   };
 
-  const handlePayWithUPI = async () => {
+  const handleShowQRCode = async () => {
     if (!selectedLocation || !selectedLocationId || !selectedSlot || !date || !time || !name || !email) {
       toast({
         title: "Missing Information",
@@ -71,8 +73,16 @@ const BookingForm = ({
       return;
     }
 
+    // Generate UPI link and show QR dialog
+    const link = generateUPILink();
+    setUpiLink(link);
+    setShowQRDialog(true);
+  };
+
+  const handlePaymentComplete = async () => {
+    if (!selectedLocationId || !date || !selectedSlot) return;
+
     try {
-      // Save booking to database
       await createBooking.mutateAsync({
         location_id: selectedLocationId,
         customer_name: name,
@@ -84,13 +94,18 @@ const BookingForm = ({
         price: slotPrice,
       });
 
-      const upiLink = generateUPILink();
-      window.location.href = upiLink;
-      
+      setShowQRDialog(false);
       toast({
         title: "Booking Confirmed!",
-        description: "Opening UPI app for payment. Complete the payment to finalize your booking.",
+        description: "Thank you for your payment. Your pod is reserved.",
       });
+
+      // Reset form
+      setDate(undefined);
+      setTime("");
+      setName("");
+      setEmail("");
+      setPhone("");
     } catch (error) {
       toast({
         title: "Booking Failed",
@@ -240,18 +255,33 @@ const BookingForm = ({
 
       <Button 
         type="button"
-        onClick={handlePayWithUPI}
+        onClick={handleShowQRCode}
         size="lg"
         disabled={!isFormValid || isUnavailable || createBooking.isPending}
         className="w-full h-14 text-lg font-semibold bg-gradient-to-r from-primary to-primary/80 hover:from-primary/90 hover:to-primary/70 transition-all duration-300"
       >
-        <Smartphone className="mr-2 h-5 w-5" />
+        <QrCode className="mr-2 h-5 w-5" />
         {createBooking.isPending ? "Saving..." : `Pay ₹${slotPrice} with UPI`}
       </Button>
       
       <p className="text-xs text-center text-muted-foreground">
-        Opens your UPI app (GPay, PhonePe, Paytm, etc.)
+        Scan QR code with any UPI app to pay
       </p>
+
+      {/* Payment QR Dialog */}
+      <PaymentQRDialog
+        open={showQRDialog}
+        onOpenChange={setShowQRDialog}
+        upiLink={upiLink}
+        amount={slotPrice}
+        bookingDetails={{
+          location: selectedLocation || "",
+          slot: selectedSlot || "",
+          date: date ? format(date, "PPP") : "",
+          time: time,
+        }}
+        onPaymentComplete={handlePaymentComplete}
+      />
     </form>
   );
 };
