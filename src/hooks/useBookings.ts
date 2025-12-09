@@ -57,7 +57,7 @@ export const useCreateBooking = () => {
     mutationFn: async (booking: Omit<Booking, "id" | "created_at" | "status">) => {
       const { data, error } = await supabase
         .from("bookings")
-        .insert([{ ...booking, status: "pending" }])
+        .insert([{ ...booking, status: "confirmed" }])
         .select()
         .single();
       

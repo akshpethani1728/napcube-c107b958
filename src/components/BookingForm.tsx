@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { Calendar, User, Mail, Phone, CreditCard, AlertCircle } from "lucide-react";
+import { Calendar, User, Mail, Phone, QrCode, AlertCircle } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -10,30 +10,31 @@ import { cn } from "@/lib/utils";
 import { useToast } from "@/hooks/use-toast";
 import { useCreateBooking } from "@/hooks/useBookings";
 import { useLocationAvailability } from "@/hooks/useAvailability";
-import { useRazorpay } from "@/hooks/useRazorpay";
-
+import PaymentQRDialog from "./PaymentQRDialog";
 interface BookingFormProps {
   selectedLocation: string | null;
   selectedLocationId: string | null;
   selectedSlot: string | null;
   slotPrice: number;
+  upiId?: string;
 }
 
 const BookingForm = ({ 
   selectedLocation, 
   selectedLocationId,
   selectedSlot, 
-  slotPrice,
+  slotPrice, 
+  upiId = "yourstore@upi" 
 }: BookingFormProps) => {
   const [date, setDate] = useState<Date>();
   const [time, setTime] = useState("");
   const [name, setName] = useState("");
   const [email, setEmail] = useState("");
   const [phone, setPhone] = useState("");
-  const [isProcessing, setIsProcessing] = useState(false);
+  const [showQRDialog, setShowQRDialog] = useState(false);
+  const [upiLink, setUpiLink] = useState("");
   const { toast } = useToast();
   const createBooking = useCreateBooking();
-  const { createOrder, initiatePayment } = useRazorpay();
   
   const { data: availability, isLoading: checkingAvailability } = useLocationAvailability(
     selectedLocationId,
@@ -46,7 +47,14 @@ const BookingForm = ({
     "18:00", "19:00", "20:00", "21:00", "22:00", "23:00"
   ];
 
-  const handlePayment = async () => {
+  const generateUPILink = () => {
+    const transactionNote = `SleepPod-${selectedLocation}-${selectedSlot}`;
+    const encodedName = encodeURIComponent("Sleep Pod Booking");
+    const encodedNote = encodeURIComponent(transactionNote);
+    return `upi://pay?pa=${upiId}&pn=${encodedName}&am=${slotPrice}&cu=INR&tn=${encodedNote}`;
+  };
+
+  const handleShowQRCode = async () => {
     if (!selectedLocation || !selectedLocationId || !selectedSlot || !date || !time || !name || !email) {
       toast({
         title: "Missing Information",
@@ -65,11 +73,17 @@ const BookingForm = ({
       return;
     }
 
-    setIsProcessing(true);
+    // Generate UPI link and show QR dialog
+    const link = generateUPILink();
+    setUpiLink(link);
+    setShowQRDialog(true);
+  };
+
+  const handlePaymentComplete = async () => {
+    if (!selectedLocationId || !date || !selectedSlot) return;
 
     try {
-      // Create booking with pending status
-      const booking = await createBooking.mutateAsync({
+      await createBooking.mutateAsync({
         location_id: selectedLocationId,
         customer_name: name,
         customer_email: email,
@@ -80,45 +94,24 @@ const BookingForm = ({
         price: slotPrice,
       });
 
-      // Create Razorpay order
-      const order = await createOrder(booking.id, slotPrice);
-
-      // Initiate payment
-      await initiatePayment(
-        order,
-        booking.id,
-        { name, email, phone: phone || "" },
-        () => {
-          // Success callback
-          toast({
-            title: "Payment Successful!",
-            description: "Your pod booking is confirmed. Check your email for details.",
-          });
-          // Reset form
-          setDate(undefined);
-          setTime("");
-          setName("");
-          setEmail("");
-          setPhone("");
-          setIsProcessing(false);
-        },
-        (error) => {
-          // Failure callback
-          toast({
-            title: "Payment Failed",
-            description: error,
-            variant: "destructive"
-          });
-          setIsProcessing(false);
-        }
-      );
-    } catch (error: any) {
+      setShowQRDialog(false);
       toast({
-        title: "Error",
-        description: error.message || "Something went wrong. Please try again.",
+        title: "Booking Confirmed!",
+        description: "Thank you for your payment. Your pod is reserved.",
+      });
+
+      // Reset form
+      setDate(undefined);
+      setTime("");
+      setName("");
+      setEmail("");
+      setPhone("");
+    } catch (error) {
+      toast({
+        title: "Booking Failed",
+        description: "Could not save your booking. Please try again.",
         variant: "destructive"
       });
-      setIsProcessing(false);
     }
   };
 
@@ -262,18 +255,33 @@ const BookingForm = ({
 
       <Button 
         type="button"
-        onClick={handlePayment}
+        onClick={handleShowQRCode}
         size="lg"
-        disabled={!isFormValid || isUnavailable || isProcessing}
+        disabled={!isFormValid || isUnavailable || createBooking.isPending}
         className="w-full h-14 text-lg font-semibold bg-gradient-to-r from-primary to-primary/80 hover:from-primary/90 hover:to-primary/70 transition-all duration-300"
       >
-        <CreditCard className="mr-2 h-5 w-5" />
-        {isProcessing ? "Processing..." : `Pay ₹${slotPrice}`}
+        <QrCode className="mr-2 h-5 w-5" />
+        {createBooking.isPending ? "Saving..." : `Pay ₹${slotPrice} with UPI`}
       </Button>
       
       <p className="text-xs text-center text-muted-foreground">
-        Secure payment powered by Razorpay
+        Scan QR code with any UPI app to pay
       </p>
+
+      {/* Payment QR Dialog */}
+      <PaymentQRDialog
+        open={showQRDialog}
+        onOpenChange={setShowQRDialog}
+        upiLink={upiLink}
+        amount={slotPrice}
+        bookingDetails={{
+          location: selectedLocation || "",
+          slot: selectedSlot || "",
+          date: date ? format(date, "PPP") : "",
+          time: time,
+        }}
+        onPaymentComplete={handlePaymentComplete}
+      />
     </form>
   );
 };

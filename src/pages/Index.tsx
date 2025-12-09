@@ -211,6 +211,7 @@ const Index = () => {
               selectedLocationId={selectedLocation}
               selectedSlot={selectedSlotData?.duration || null}
               slotPrice={selectedSlotData?.price || 0}
+              upiId="akshpethani1728@ybl"
             />
           </div>
         </section>
