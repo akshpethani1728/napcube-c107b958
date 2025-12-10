@@ -11,6 +11,20 @@ interface CreateOrderRequest {
   amount: number;
 }
 
+// Input validation helpers
+function isValidUUID(str: string): boolean {
+  const uuidRegex = /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i;
+  return uuidRegex.test(str);
+}
+
+function isValidAmount(amount: number): boolean {
+  return typeof amount === 'number' && 
+         !isNaN(amount) && 
+         amount > 0 && 
+         amount <= 1000000 && // Max 10 lakh INR
+         Number.isInteger(amount);
+}
+
 serve(async (req) => {
   // Handle CORS preflight
   if (req.method === "OPTIONS") {
@@ -18,7 +32,30 @@ serve(async (req) => {
   }
 
   try {
-    const { bookingId, amount }: CreateOrderRequest = await req.json();
+    const body = await req.json();
+    const { bookingId, amount } = body as CreateOrderRequest;
+    
+    // Validate inputs
+    if (!bookingId || typeof bookingId !== 'string') {
+      return new Response(
+        JSON.stringify({ error: "Booking ID is required" }),
+        { status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+      );
+    }
+    
+    if (!isValidUUID(bookingId)) {
+      return new Response(
+        JSON.stringify({ error: "Invalid booking ID format" }),
+        { status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+      );
+    }
+    
+    if (!isValidAmount(amount)) {
+      return new Response(
+        JSON.stringify({ error: "Invalid amount. Must be a positive integer up to 1000000" }),
+        { status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+      );
+    }
     
     console.log("Creating Razorpay order for booking:", bookingId, "amount:", amount);
 
@@ -26,7 +63,11 @@ serve(async (req) => {
     const razorpayKeySecret = Deno.env.get("RAZORPAY_KEY_SECRET");
 
     if (!razorpayKeyId || !razorpayKeySecret) {
-      throw new Error("Razorpay credentials not configured");
+      console.error("Razorpay credentials not configured");
+      return new Response(
+        JSON.stringify({ error: "Payment system not configured" }),
+        { status: 500, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+      );
     }
 
     // Create Razorpay order
@@ -51,7 +92,10 @@ serve(async (req) => {
     if (!orderResponse.ok) {
       const errorText = await orderResponse.text();
       console.error("Razorpay order creation failed:", errorText);
-      throw new Error(`Failed to create Razorpay order: ${errorText}`);
+      return new Response(
+        JSON.stringify({ error: "Failed to create payment order" }),
+        { status: 500, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+      );
     }
 
     const order = await orderResponse.json();
@@ -69,7 +113,10 @@ serve(async (req) => {
 
     if (updateError) {
       console.error("Failed to update booking:", updateError);
-      throw new Error("Failed to update booking with order ID");
+      return new Response(
+        JSON.stringify({ error: "Failed to process booking" }),
+        { status: 500, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+      );
     }
 
     return new Response(
@@ -87,7 +134,7 @@ serve(async (req) => {
   } catch (error: any) {
     console.error("Error in create-razorpay-order:", error);
     return new Response(
-      JSON.stringify({ error: error.message }),
+      JSON.stringify({ error: "An unexpected error occurred" }),
       {
         status: 500,
         headers: { ...corsHeaders, "Content-Type": "application/json" },
