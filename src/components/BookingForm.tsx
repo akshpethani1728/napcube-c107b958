@@ -11,6 +11,7 @@ import { useToast } from "@/hooks/use-toast";
 import { useCreateBooking } from "@/hooks/useBookings";
 import { useLocationAvailability } from "@/hooks/useAvailability";
 import { useRazorpay } from "@/hooks/useRazorpay";
+import { z } from "zod";
 
 interface BookingFormProps {
   selectedLocation: string | null;
@@ -18,6 +19,29 @@ interface BookingFormProps {
   selectedSlot: string | null;
   slotPrice: number;
 }
+
+// Validation schema for booking form
+const bookingSchema = z.object({
+  name: z.string()
+    .trim()
+    .min(1, "Name is required")
+    .max(100, "Name must be less than 100 characters")
+    .regex(/^[a-zA-Z\s'-]+$/, "Name can only contain letters, spaces, hyphens and apostrophes"),
+  email: z.string()
+    .trim()
+    .min(1, "Email is required")
+    .email("Please enter a valid email address")
+    .max(255, "Email must be less than 255 characters"),
+  phone: z.string()
+    .trim()
+    .max(20, "Phone number must be less than 20 characters")
+    .refine(
+      (val) => val === "" || /^(\+91[\s-]?)?[0-9]{10}$/.test(val.replace(/\s/g, "")),
+      "Please enter a valid Indian phone number"
+    )
+    .optional()
+    .transform(val => val || ""),
+});
 
 const BookingForm = ({ 
   selectedLocation, 
@@ -31,6 +55,7 @@ const BookingForm = ({
   const [email, setEmail] = useState("");
   const [phone, setPhone] = useState("");
   const [isProcessing, setIsProcessing] = useState(false);
+  const [validationErrors, setValidationErrors] = useState<Record<string, string>>({});
   const { toast } = useToast();
   const createBooking = useCreateBooking();
   const { createOrder, initiatePayment } = useRazorpay();
@@ -46,11 +71,39 @@ const BookingForm = ({
     "18:00", "19:00", "20:00", "21:00", "22:00", "23:00"
   ];
 
+  const validateForm = () => {
+    const result = bookingSchema.safeParse({ name, email, phone });
+    
+    if (!result.success) {
+      const errors: Record<string, string> = {};
+      result.error.errors.forEach((err) => {
+        if (err.path[0]) {
+          errors[err.path[0] as string] = err.message;
+        }
+      });
+      setValidationErrors(errors);
+      return null;
+    }
+    
+    setValidationErrors({});
+    return result.data;
+  };
+
   const handlePayment = async () => {
-    if (!selectedLocation || !selectedLocationId || !selectedSlot || !date || !time || !name || !email) {
+    if (!selectedLocation || !selectedLocationId || !selectedSlot || !date || !time) {
       toast({
         title: "Missing Information",
-        description: "Please fill in all required fields before payment.",
+        description: "Please select a location, time slot, date and time.",
+        variant: "destructive"
+      });
+      return;
+    }
+
+    const validatedData = validateForm();
+    if (!validatedData) {
+      toast({
+        title: "Validation Error",
+        description: "Please check the form for errors.",
         variant: "destructive"
       });
       return;
@@ -68,12 +121,12 @@ const BookingForm = ({
     setIsProcessing(true);
 
     try {
-      // Create booking with pending status
+      // Create booking with pending status using validated data
       const booking = await createBooking.mutateAsync({
         location_id: selectedLocationId,
-        customer_name: name,
-        customer_email: email,
-        customer_phone: phone || "",
+        customer_name: validatedData.name,
+        customer_email: validatedData.email,
+        customer_phone: validatedData.phone,
         booking_date: format(date, "yyyy-MM-dd"),
         booking_time: time,
         duration: selectedSlot,
@@ -208,11 +261,18 @@ const BookingForm = ({
           <Input 
             id="name"
             value={name}
-            onChange={(e) => setName(e.target.value)}
+            onChange={(e) => {
+              setName(e.target.value);
+              if (validationErrors.name) setValidationErrors(prev => ({ ...prev, name: "" }));
+            }}
             placeholder="John Doe" 
-            className="pl-10 h-12" 
+            className={cn("pl-10 h-12", validationErrors.name && "border-red-500")}
+            maxLength={100}
           />
         </div>
+        {validationErrors.name && (
+          <p className="text-sm text-red-500">{validationErrors.name}</p>
+        )}
       </div>
 
       <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
@@ -224,11 +284,18 @@ const BookingForm = ({
               id="email"
               type="email"
               value={email}
-              onChange={(e) => setEmail(e.target.value)}
+              onChange={(e) => {
+                setEmail(e.target.value);
+                if (validationErrors.email) setValidationErrors(prev => ({ ...prev, email: "" }));
+              }}
               placeholder="john@example.com" 
-              className="pl-10 h-12" 
+              className={cn("pl-10 h-12", validationErrors.email && "border-red-500")}
+              maxLength={255}
             />
           </div>
+          {validationErrors.email && (
+            <p className="text-sm text-red-500">{validationErrors.email}</p>
+          )}
         </div>
 
         <div className="space-y-2">
@@ -239,11 +306,18 @@ const BookingForm = ({
               id="phone"
               type="tel"
               value={phone}
-              onChange={(e) => setPhone(e.target.value)}
+              onChange={(e) => {
+                setPhone(e.target.value);
+                if (validationErrors.phone) setValidationErrors(prev => ({ ...prev, phone: "" }));
+              }}
               placeholder="+91 98765 43210" 
-              className="pl-10 h-12" 
+              className={cn("pl-10 h-12", validationErrors.phone && "border-red-500")}
+              maxLength={20}
             />
           </div>
+          {validationErrors.phone && (
+            <p className="text-sm text-red-500">{validationErrors.phone}</p>
+          )}
         </div>
       </div>
 
