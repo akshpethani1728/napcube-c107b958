@@ -7,6 +7,8 @@ declare global {
   }
 }
 
+export type PaymentMethod = "qr" | "gpay" | "phonepe" | "paytm" | "other_upi" | "card";
+
 interface RazorpayOrder {
   orderId: string;
   amount: number;
@@ -19,6 +21,12 @@ interface PaymentVerificationResult {
   message?: string;
   error?: string;
 }
+
+const UPI_APP_PACKAGES: Record<string, string> = {
+  gpay: "com.google.android.apps.nbu.paisa.user",
+  phonepe: "com.phonepe.app",
+  paytm: "net.one97.paytm",
+};
 
 export const useRazorpay = () => {
   const loadRazorpayScript = useCallback((): Promise<boolean> => {
@@ -74,6 +82,128 @@ export const useRazorpay = () => {
     return data;
   }, []);
 
+  const getPaymentConfig = (paymentMethod: PaymentMethod) => {
+    if (paymentMethod === "card") {
+      return {
+        config: {
+          display: {
+            blocks: {
+              banks: {
+                name: "Pay via Card or Bank",
+                instruments: [
+                  { method: "card" },
+                  { method: "netbanking" },
+                  { method: "wallet" }
+                ]
+              }
+            },
+            sequence: ["block.banks"],
+            preferences: {
+              show_default_blocks: false
+            }
+          }
+        }
+      };
+    }
+
+    if (paymentMethod === "qr") {
+      return {
+        config: {
+          display: {
+            blocks: {
+              upi: {
+                name: "Scan QR Code",
+                instruments: [
+                  { method: "upi", flows: ["qrcode"] }
+                ]
+              }
+            },
+            sequence: ["block.upi"],
+            preferences: {
+              show_default_blocks: false
+            }
+          }
+        }
+      };
+    }
+
+    if (paymentMethod === "other_upi") {
+      return {
+        config: {
+          display: {
+            blocks: {
+              upi: {
+                name: "Enter UPI ID",
+                instruments: [
+                  { method: "upi", flows: ["collect"] }
+                ]
+              }
+            },
+            sequence: ["block.upi"],
+            preferences: {
+              show_default_blocks: false
+            }
+          }
+        }
+      };
+    }
+
+    // For specific UPI apps (gpay, phonepe, paytm)
+    const appPackage = UPI_APP_PACKAGES[paymentMethod];
+    if (appPackage) {
+      return {
+        config: {
+          display: {
+            blocks: {
+              upi: {
+                name: `Pay via ${paymentMethod === "gpay" ? "Google Pay" : paymentMethod === "phonepe" ? "PhonePe" : "Paytm"}`,
+                instruments: [
+                  { 
+                    method: "upi", 
+                    flows: ["intent"],
+                    apps: [appPackage]
+                  }
+                ]
+              }
+            },
+            sequence: ["block.upi"],
+            preferences: {
+              show_default_blocks: false
+            }
+          }
+        }
+      };
+    }
+
+    // Default fallback - show all options
+    return {
+      config: {
+        display: {
+          blocks: {
+            upi: {
+              name: "Pay via UPI",
+              instruments: [
+                { method: "upi", flows: ["qrcode", "collect", "intent"] }
+              ]
+            },
+            other: {
+              name: "Other Payment Methods",
+              instruments: [
+                { method: "card" },
+                { method: "netbanking" },
+                { method: "wallet" }
+              ]
+            }
+          },
+          sequence: ["block.upi", "block.other"],
+          preferences: {
+            show_default_blocks: false
+          }
+        }
+      }
+    };
+  };
+
   const initiatePayment = useCallback(async (
     order: RazorpayOrder,
     bookingId: string,
@@ -83,13 +213,16 @@ export const useRazorpay = () => {
       phone: string;
     },
     onSuccess: () => void,
-    onFailure: (error: string) => void
+    onFailure: (error: string) => void,
+    paymentMethod: PaymentMethod = "qr"
   ) => {
     const scriptLoaded = await loadRazorpayScript();
     if (!scriptLoaded) {
       onFailure("Failed to load payment gateway. Please try again.");
       return;
     }
+
+    const paymentConfig = getPaymentConfig(paymentMethod);
 
     const options = {
       key: order.keyId,
@@ -121,30 +254,7 @@ export const useRazorpay = () => {
         email: customerDetails.email,
         contact: customerDetails.phone,
       },
-      config: {
-        display: {
-          blocks: {
-            upi: {
-              name: "Pay via UPI",
-              instruments: [
-                { method: "upi", flows: ["qrcode", "collect", "intent"] }
-              ]
-            },
-            other: {
-              name: "Other Payment Methods",
-              instruments: [
-                { method: "card" },
-                { method: "netbanking" },
-                { method: "wallet" }
-              ]
-            }
-          },
-          sequence: ["block.upi", "block.other"],
-          preferences: {
-            show_default_blocks: false
-          }
-        }
-      },
+      ...paymentConfig,
       theme: {
         color: "#000028",
       },

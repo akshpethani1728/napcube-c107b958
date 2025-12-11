@@ -10,7 +10,8 @@ import { cn } from "@/lib/utils";
 import { useToast } from "@/hooks/use-toast";
 import { useCreateBooking } from "@/hooks/useBookings";
 import { useLocationAvailability } from "@/hooks/useAvailability";
-import { useRazorpay } from "@/hooks/useRazorpay";
+import { useRazorpay, PaymentMethod } from "@/hooks/useRazorpay";
+import PaymentMethodSelector from "@/components/PaymentMethodSelector";
 import { z } from "zod";
 
 interface BookingFormProps {
@@ -54,6 +55,7 @@ const BookingForm = ({
   const [name, setName] = useState("");
   const [email, setEmail] = useState("");
   const [phone, setPhone] = useState("");
+  const [paymentMethod, setPaymentMethod] = useState<PaymentMethod | null>(null);
   const [isProcessing, setIsProcessing] = useState(false);
   const [validationErrors, setValidationErrors] = useState<Record<string, string>>({});
   const { toast } = useToast();
@@ -99,11 +101,29 @@ const BookingForm = ({
       return;
     }
 
+    if (!paymentMethod) {
+      toast({
+        title: "Select Payment Method",
+        description: "Please select a payment method to continue.",
+        variant: "destructive"
+      });
+      return;
+    }
+
     const validatedData = validateForm();
     if (!validatedData) {
       toast({
         title: "Validation Error",
         description: "Please check the form for errors.",
+        variant: "destructive"
+      });
+      return;
+    }
+
+    if (availability && !availability.isAvailable) {
+      toast({
+        title: "No Pods Available",
+        description: "All pods are booked for this date. Please select a different date.",
         variant: "destructive"
       });
       return;
@@ -136,7 +156,7 @@ const BookingForm = ({
       // Create Razorpay order
       const order = await createOrder(booking.id, slotPrice);
 
-      // Initiate payment
+      // Initiate payment with selected method
       await initiatePayment(
         order,
         booking.id,
@@ -153,6 +173,7 @@ const BookingForm = ({
           setName("");
           setEmail("");
           setPhone("");
+          setPaymentMethod(null);
           setIsProcessing(false);
         },
         (error) => {
@@ -163,7 +184,8 @@ const BookingForm = ({
             variant: "destructive"
           });
           setIsProcessing(false);
-        }
+        },
+        paymentMethod
       );
     } catch (error: any) {
       toast({
@@ -175,7 +197,7 @@ const BookingForm = ({
     }
   };
 
-  const isFormValid = selectedLocation && selectedSlot && date && time && name && email;
+  const isFormValid = selectedLocation && selectedSlot && date && time && name && email && paymentMethod;
   const isUnavailable = availability && !availability.isAvailable;
 
   return (
@@ -333,6 +355,12 @@ const BookingForm = ({
           </div>
         </div>
       )}
+
+      {/* Payment Method Selector */}
+      <PaymentMethodSelector
+        selectedMethod={paymentMethod}
+        onSelect={setPaymentMethod}
+      />
 
       <Button 
         type="button"
